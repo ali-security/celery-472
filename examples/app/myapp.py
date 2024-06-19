@@ -1,4 +1,5 @@
 import os
+from datetime import UTC, datetime, timedelta
 
 from create_quorum_queues import my_quorum_queue
 
@@ -11,6 +12,14 @@ app.conf.worker_quorumq = os.environ.get("WORKER_QUORUMQ", "False").lower() == "
 
 if app.conf.worker_quorumq:
     app.conf.task_queues = (my_quorum_queue,)
+
+# Reduce qos to 1*4=4
+app.conf.worker_prefetch_multiplier = 1
+app.conf.worker_concurrency = 4
+
+# Reduce logs
+app.conf.worker_heartbeat = None
+app.conf.broker_heartbeat = 0
 
 
 @app.task
@@ -33,6 +42,7 @@ def test():
         print("Celery Quorum Queue POC")
         print("=======================")
         print("1. Send a simple identity task")
+        print("1.1 Send an ETA identity task")
         print("2. Send a group of add tasks")
         print("3. Inspect the active queues")
         print("4. Shutdown Celery worker")
@@ -40,12 +50,20 @@ def test():
         print("Q! Exit")
         choice = input("Enter your choice (1-4 or Q): ")
 
-        if choice == "1":
+        if choice == "1" or choice == "1.1":
             payload = f"Hello, {"Quorum" if app.conf.worker_quorumq else "Classic"} Queue!"
-            result = identity.si(payload).apply_async(queue=queue)
+            eta = datetime.now(UTC) + timedelta(seconds=30)
+            if choice == "1.1":
+                result = identity.si(payload).apply_async(queue=queue, eta=eta)
+            else:
+                result = identity.si(payload).apply_async(queue=queue)
             print()
             print(f"Task sent with ID: {result.id}")
             print("Task type: identity")
+
+            if choice == "1.1":
+                print(f"ETA: {eta}")
+
             print(f"Payload: {payload}")
 
         elif choice == "2":
