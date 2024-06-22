@@ -13,6 +13,9 @@ app.conf.worker_quorumq = os.environ.get("WORKER_QUORUMQ", "False").lower() == "
 if app.conf.worker_quorumq:
     app.conf.task_queues = (my_quorum_queue,)
 
+# A must for quorum queues safety or else messages may be lost
+app.conf.broker_transport_options = {"confirm_publish": True}
+
 # Reduce qos to 1*4=4
 app.conf.worker_prefetch_multiplier = 1
 app.conf.worker_concurrency = 4
