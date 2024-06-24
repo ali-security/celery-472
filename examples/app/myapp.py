@@ -1,17 +1,18 @@
 import os
 from datetime import UTC, datetime, timedelta
 
-from create_quorum_queues import my_quorum_queue
-
 from celery import Celery
 from celery.canvas import group
+
+# from create_quorum_queues import my_quorum_queue
+
 
 app = Celery("myapp", broker="amqp://guest@localhost:5672//")
 
 app.conf.worker_quorumq = os.environ.get("WORKER_QUORUMQ", "False").lower() == "true"
 
-if app.conf.worker_quorumq:
-    app.conf.task_queues = (my_quorum_queue,)
+# if app.conf.worker_quorumq:
+#     app.conf.task_queues = (my_quorum_queue,)
 
 # A must for quorum queues safety or else messages may be lost
 app.conf.broker_transport_options = {"confirm_publish": True}
@@ -36,10 +37,11 @@ def identity(x):
 
 
 def test():
-    if app.conf.worker_quorumq:
-        queue = my_quorum_queue.name
-    else:
-        queue = "celery"
+    # if app.conf.worker_quorumq:
+    #     queue = my_quorum_queue.name
+    # else:
+    #     queue = "celery"
+    queue = "celery"
 
     while True:
         print("Celery Quorum Queue POC")
