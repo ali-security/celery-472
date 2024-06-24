@@ -30,8 +30,18 @@ class Tasks(bootsteps.StartStopStep):
         # and if so make sure the 'apply_global' flag is set on qos updates.
         qos_global = not c.connection.qos_semantics_matches_spec
 
-        # Override global qos setting if worker_quorumq is enabled for POC testing
-        if c.app.conf.worker_quorumq is True:
+        # Override global qos setting if there's a quorum queue
+        worker_quorumq = False
+        if c.app.conf.broker_url.startswith("amqp"):
+            queues = c.app.amqp.queues
+            for q in queues:
+                queue = queues[q]
+                if queue.queue_arguments:
+                    if "x-queue-type" in queue.queue_arguments:
+                        if queue.queue_arguments["x-queue-type"] == "quorum":
+                            worker_quorumq = True
+                            break
+        if worker_quorumq:
             qos_global = False
 
         # set initial prefetch count
